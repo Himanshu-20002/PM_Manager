@@ -27,6 +27,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
+    // Verify assigned user is a member of the project
+    if (validation.data.assignedTo) {
+      const isMember = project.members.some(
+        (mId: any) => mId.toString() === validation.data.assignedTo
+      );
+      if (!isMember) {
+        return NextResponse.json({ error: 'Assigned user is not a member of this project' }, { status: 400 });
+      }
+    }
+
     const task = await Task.create(validation.data);
     return NextResponse.json(task, { status: 201 });
   } catch (error: any) {

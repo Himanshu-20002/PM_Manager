@@ -23,7 +23,7 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       family: 4, 
     };

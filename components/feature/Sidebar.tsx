@@ -3,14 +3,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  CheckSquare, 
+import {
+  LayoutDashboard,
+  Briefcase,
+  CheckSquare,
   LogOut,
   PlusCircle,
   Menu,
-  X
+  X,
+  Users,
+  UserIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +25,8 @@ export const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: Briefcase },
+    { name: 'Team', href: '/team', icon: Users },
+    { name: 'Profile', href: '/profile', icon: UserIcon },
   ];
 
   const handleLogout = async () => {
@@ -45,9 +49,9 @@ export const Sidebar = () => {
     <>
       {/* Mobile Toggle */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setIsOpen(!isOpen)}
           className="p-2"
         >
@@ -57,8 +61,8 @@ export const Sidebar = () => {
 
       {/* Backdrop */}
       {isOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40" 
+        <div
+          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -85,8 +89,8 @@ export const Sidebar = () => {
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group",
-                    isActive 
-                      ? "bg-indigo-600/10 text-indigo-400 font-medium" 
+                    isActive
+                      ? "bg-indigo-600/10 text-indigo-400 font-medium"
                       : "hover:bg-slate-800 hover:text-white"
                   )}
                   onClick={() => setIsOpen(false)}

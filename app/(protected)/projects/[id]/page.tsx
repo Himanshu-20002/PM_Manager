@@ -19,13 +19,26 @@ export default function ProjectDetailPage() {
     title: '',
     description: '',
     dueDate: '',
+    assignedTo: '',
   });
+  const [memberEmail, setMemberEmail] = React.useState('');
+  const [isAddingMember, setIsAddingMember] = React.useState(false);
+  const [session, setSession] = React.useState<any>(null);
 
   const fetchProjectDetails = async () => {
     try {
-      const res = await fetch(`/api/projects/${id}`);
-      const json = await res.json();
-      if (res.ok) setData(json);
+      const [projectRes, sessionRes] = await Promise.all([
+        fetch(`/api/projects/${id}`),
+        fetch('/api/auth/session') // I need to verify this endpoint exists or create it
+      ]);
+      
+      const projectJson = await projectRes.json();
+      if (projectRes.ok) setData(projectJson);
+      
+      if (sessionRes.ok) {
+        const sessionJson = await sessionRes.json();
+        setSession(sessionJson);
+      }
     } catch (error) {
       console.error('Failed to fetch project details', error);
     } finally {
@@ -48,13 +61,39 @@ export default function ProjectDetailPage() {
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setTaskData({ title: '', description: '', dueDate: '' });
+        setTaskData({ title: '', description: '', dueDate: '', assignedTo: '' });
         fetchProjectDetails();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to create task');
       }
     } catch (error) {
       console.error('Failed to create task', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingMember(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/add-member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: memberEmail }),
+      });
+      if (res.ok) {
+        setMemberEmail('');
+        fetchProjectDetails();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to add member');
+      }
+    } catch (error) {
+      console.error('Failed to add member', error);
+    } finally {
+      setIsAddingMember(false);
     }
   };
 
@@ -114,38 +153,81 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* Tasks Section */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <ListTodo size={20} className="text-indigo-600" />
-            Project Tasks
-          </h3>
-          <div className="flex gap-2">
-            <Badge variant="todo">{tasks.filter((t: any) => t.status === 'todo').length} Todo</Badge>
-            <Badge variant="in-progress">{tasks.filter((t: any) => t.status === 'in-progress').length} In Progress</Badge>
-            <Badge variant="done">{tasks.filter((t: any) => t.status === 'done').length} Done</Badge>
+      {/* Team Members Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <ListTodo size={20} className="text-indigo-600" />
+              Project Tasks
+            </h3>
+            <div className="flex gap-2">
+              <Badge variant="todo">{tasks.filter((t: any) => t.status === 'todo').length} Todo</Badge>
+              <Badge variant="in-progress">{tasks.filter((t: any) => t.status === 'in-progress').length} In Progress</Badge>
+              <Badge variant="done">{tasks.filter((t: any) => t.status === 'done').length} Done</Badge>
+            </div>
           </div>
+
+          {tasks.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {tasks.map((task: any) => (
+                <TaskCard 
+                  key={task._id} 
+                  task={task} 
+                  onStatusUpdate={handleStatusUpdate}
+                  canUpdateStatus={true}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
+              <ListTodo size={48} className="mx-auto text-slate-300 mb-4" />
+              <h4 className="text-lg font-medium text-slate-900">No tasks in this project</h4>
+              <p className="text-slate-500 text-sm">Create the first task to start tracking progress.</p>
+            </div>
+          )}
         </div>
 
-        {tasks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tasks.map((task: any) => (
-              <TaskCard 
-                key={task._id} 
-                task={task} 
-                onStatusUpdate={handleStatusUpdate}
-                canUpdateStatus={true}
-              />
-            ))}
+        {/* Sidebar: Team Members */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                <Users size={18} className="text-indigo-600" />
+                Team Members
+              </h4>
+            </div>
+
+            <div className="space-y-4">
+              {project.members.map((member: any) => (
+                <div key={member._id} className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{member.name}</p>
+                    <p className="text-xs text-slate-500">{member.email}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {session?.role === 'admin' && (
+              <form onSubmit={handleAddMember} className="pt-4 border-t border-slate-100 space-y-3">
+                <Input 
+                  placeholder="Collaborator email" 
+                  type="email"
+                  value={memberEmail}
+                  onChange={(e) => setMemberEmail(e.target.value)}
+                  required
+                />
+                <Button size="sm" className="w-full" isLoading={isAddingMember}>
+                  Add Member
+                </Button>
+              </form>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
-            <ListTodo size={48} className="mx-auto text-slate-300 mb-4" />
-            <h4 className="text-lg font-medium text-slate-900">No tasks in this project</h4>
-            <p className="text-slate-500 text-sm">Create the first task to start tracking progress.</p>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Create Task Modal */}
@@ -168,6 +250,23 @@ export default function ProjectDetailPage() {
             value={taskData.description}
             onChange={(e) => setTaskData({ ...taskData, description: e.target.value })}
           />
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Assign To Member</label>
+            <select 
+              className="w-full flex h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              value={taskData.assignedTo}
+              onChange={(e) => setTaskData({ ...taskData, assignedTo: e.target.value })}
+            >
+              <option value="">Unassigned</option>
+              {project.members.map((member: any) => (
+                <option key={member._id} value={member._id}>
+                  {member.name} ({member.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Input 
             label="Due Date" 
             type="date"

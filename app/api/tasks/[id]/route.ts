@@ -26,6 +26,11 @@ export async function PATCH(
 
     // Role-based authorization
     if (session.role === 'member') {
+      // Only the assigned user can update the task
+      if (task.assignedTo?.toString() !== String(session.id)) {
+        return NextResponse.json({ error: 'Forbidden: You are not assigned to this task' }, { status: 403 });
+      }
+
       // Members can only update status
       if (body.status && Object.keys(body).length === 1) {
         task.status = body.status;

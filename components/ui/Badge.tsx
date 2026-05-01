@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'todo' | 'in-progress' | 'done' | 'admin' | 'member' | 'default' | 'danger';
+  variant?: 'todo' | 'in-progress' | 'done' | 'admin' | 'member' | 'default' | 'danger' | 'success' | 'secondary' | 'warning';
   className?: string;
 }
 
@@ -15,6 +15,9 @@ export const Badge = ({ children, variant = 'default', className }: BadgeProps) 
     admin: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     member: 'bg-purple-50 text-purple-700 border-purple-200',
     danger: 'bg-red-50 text-red-700 border-red-200',
+    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    secondary: 'bg-slate-100 text-slate-700 border-slate-200',
+    warning: 'bg-amber-50 text-amber-700 border-amber-200',
     default: 'bg-slate-100 text-slate-700 border-slate-200',
   };
 

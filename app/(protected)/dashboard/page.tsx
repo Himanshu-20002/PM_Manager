@@ -12,27 +12,39 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
+  const [session, setSession] = React.useState<any>(null);
   const [tasks, setTasks] = React.useState<any[]>([]);
   const [stats, setStats] = React.useState({
     total: 0,
     completed: 0,
     inProgress: 0,
-    overdue: 0
+    todo: 0,
+    overdue: 0,
+    leftToDo: 0
   });
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/tasks');
-        const data = await res.json();
-        if (res.ok) {
+        const [sessionRes, tasksRes] = await Promise.all([
+          fetch('/api/auth/session'),
+          fetch('/api/tasks')
+        ]);
+
+        if (sessionRes.ok) {
+          setSession(await sessionRes.json());
+        }
+
+        if (tasksRes.ok) {
+          const data = await tasksRes.json();
           setTasks(data);
           
           // Calculate stats
           const now = new Date();
           const completed = data.filter((t: any) => t.status === 'done').length;
           const inProgress = data.filter((t: any) => t.status === 'in-progress').length;
+          const todo = data.filter((t: any) => t.status === 'todo').length;
           const overdue = data.filter((t: any) => 
             t.dueDate && new Date(t.dueDate) < now && t.status !== 'done'
           ).length;
@@ -41,7 +53,9 @@ export default function DashboardPage() {
             total: data.length,
             completed,
             inProgress,
-            overdue
+            todo,
+            overdue,
+            leftToDo: data.length - completed
           });
         }
       } catch (error) {
@@ -80,14 +94,20 @@ export default function DashboardPage() {
     { title: 'Total Tasks', value: stats.total, icon: ListTodo, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { title: 'In Progress', value: stats.inProgress, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
     { title: 'Completed', value: stats.completed, icon: CheckSquare, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { title: 'Overdue', value: stats.overdue, icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
+    { title: 'Left to Do', value: stats.leftToDo, icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
+
+  const isMember = session?.role === 'member';
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Dashboard</h2>
-        <p className="text-slate-500 text-sm mt-1">overview of your team's performance</p>
+        <h2 className="text-2xl font-bold text-slate-900">
+          {isMember ? 'My Tasks Dashboard' : 'Project Dashboard'}
+        </h2>
+        <p className="text-slate-500 text-sm mt-1">
+          {isMember ? 'overview of your assigned responsibilities' : "overview of your team's performance"}
+        </p>
       </div>
 
       {/* Stats Grid */}
@@ -106,11 +126,13 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Recent Tasks */}
+      {/* Tasks Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">Your Tasks</h3>
-          <Badge>{tasks.length} total</Badge>
+          <h3 className="text-lg font-bold text-slate-900">
+            {isMember ? 'Tasks Assigned to Me' : 'Recent Project Tasks'}
+          </h3>
+          <Badge variant="secondary">{tasks.length} total</Badge>
         </div>
         
         {tasks.length > 0 ? (
