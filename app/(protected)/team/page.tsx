@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Users, UserPlus, Crown, Check, X, ShieldAlert } from 'lucide-react';
+import { Users, UserPlus, Crown, Check, X, ShieldAlert, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ export default function TeamPage() {
   const [team, setTeam] = React.useState<any>(null);
   const [session, setSession] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [newTeamName, setNewTeamName] = React.useState('');
   const [inviteEmail, setInviteEmail] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -36,18 +37,9 @@ export default function TeamPage() {
 
   React.useEffect(() => {
     fetchData();
-    
-    const interval = setInterval(() => {
-      // Optimization: Only poll if tab is visible AND there are pending invitations
-      const hasPending = team?.members?.some((m: any) => m.status === 'pending');
-      
-      if (document.visibilityState === 'visible' && hasPending) {
-        fetchData();
-      }
-    }, 10000); // Increased interval to 10s for better performance
-    
-    return () => clearInterval(interval);
-  }, [team?.members]); // Re-run effect when member list changes to re-check pending state
+    // No polling - fetch only on user actions
+    return () => {};
+  }, []); // Empty dependency array - load data once on mount
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,10 +145,23 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-12 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{team.name}</h2>
-        <p className="text-slate-500 mt-2">The ultimate project squad</p>
+      {/* Header with Refresh Button */}
+      <div className="flex items-center justify-between">
+        <div className="text-center flex-1">
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{team.name}</h2>
+          <p className="text-slate-500 mt-2">The ultimate project squad</p>
+        </div>
+        <button
+          onClick={() => {
+            setIsRefreshing(true);
+            fetchData().finally(() => setIsRefreshing(false));
+          }}
+          disabled={isRefreshing}
+          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+          title="Refresh team data"
+        >
+          <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* Gamified Team View */}
@@ -190,7 +195,9 @@ export default function TeamPage() {
            </div>
 
            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 place-items-center">
-              {team.members.map((member: any) => (
+              {team.members
+                .filter((member: any) => member.user._id.toString() !== team.owner._id.toString())
+                .map((member: any) => (
                 <div key={member.user._id} className="group flex flex-col items-center">
                   <div className={cn(
                     "w-20 h-20 rounded-full border-2 p-1 transition-all duration-300 transform group-hover:scale-110",
