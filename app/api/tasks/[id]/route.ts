@@ -41,11 +41,16 @@ export async function PATCH(
       }
     }
 
-    // Admin can update everything
+    // Admin can update metadata, but status only if assigned
     if (session.role === 'admin') {
       const validation = updateTaskSchema.safeParse(body);
       if (!validation.success) {
         return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
+      }
+
+      // If trying to update status, must be the assignee
+      if (body.status && task.assignedTo?.toString() !== String(session.id)) {
+        return NextResponse.json({ error: 'Prohibited: Only the assigned specialist can update the status.' }, { status: 403 });
       }
 
       const updatedTask = await Task.findByIdAndUpdate(id, validation.data, { new: true });

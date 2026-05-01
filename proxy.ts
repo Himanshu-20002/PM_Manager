@@ -5,14 +5,14 @@ import { jwtVerify } from 'jose';
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev-only';
 const key = new TextEncoder().encode(JWT_SECRET);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                     request.nextUrl.pathname.startsWith('/signup');
-  
-  const isProtectedPage = request.nextUrl.pathname.startsWith('/dashboard') || 
-                          request.nextUrl.pathname.startsWith('/projects');
+  const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/signup');
+
+  const isProtectedPage = request.nextUrl.pathname.startsWith('/dashboard') ||
+    request.nextUrl.pathname.startsWith('/projects');
 
   if (isProtectedPage) {
     if (!token) {

@@ -100,57 +100,56 @@ export default function DashboardPage() {
   const isMember = session?.role === 'member';
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">
+    <div className="space-y-6 md:space-y-8 font-outfit">
+      <div className="pt-12 lg:pt-0 px-2 lg:px-0">
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
           {isMember ? 'My Tasks Dashboard' : 'Project Dashboard'}
         </h2>
-        <p className="text-slate-500 text-sm mt-1">
+        <p className="text-slate-400 text-xs md:text-sm mt-1 font-medium tracking-wide">
           {isMember ? 'overview of your assigned responsibilities' : "overview of your team's performance"}
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statCards.map((stat) => (
-          <div key={stat.title} className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className={cn("p-2 rounded-lg", stat.bg, stat.color)}>
-                <stat.icon size={20} />
-              </div>
-              <TrendingUp size={16} className="text-slate-300" />
+          <div key={stat.title} className="p-5 md:p-6 bg-white rounded-3xl md:rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center group">
+            <div className={cn("p-3 md:p-4 rounded-2xl mb-3 md:mb-4 transition-transform group-hover:scale-110", stat.bg, stat.color)}>
+              <stat.icon size={22} className="md:w-6 md:h-6" />
             </div>
-            <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="text-sm font-medium text-slate-500 mt-1">{stat.title}</p>
+            <p className="text-2xl md:text-4xl font-black text-slate-800 leading-none">{stat.value}</p>
+            <p className="text-[9px] md:text-xs font-black uppercase tracking-widest text-slate-400 mt-2">{stat.title}</p>
           </div>
         ))}
       </div>
 
       {/* Tasks Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">
+      <div className="space-y-4 pt-4">
+        <div className="flex items-center justify-between px-2 md:px-0">
+          <h3 className="text-lg font-black text-slate-900 tracking-tight">
             {isMember ? 'Tasks Assigned to Me' : 'Recent Project Tasks'}
           </h3>
-          <Badge variant="secondary">{tasks.length} total</Badge>
+          <Badge variant="secondary" className="border-indigo-100 text-indigo-500 bg-indigo-50 font-bold text-[10px] uppercase tracking-widest px-3 py-1">{tasks.length} total</Badge>
         </div>
         
         {tasks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {tasks.map(task => (
               <TaskCard 
                 key={task._id} 
                 task={task} 
                 onStatusUpdate={handleStatusUpdate}
-                canUpdateStatus={true}
+                onDelete={() => {}} // Deletions should probably happen on Project detail page
+                currentUserId={session?.id}
+                isAdmin={session?.role === 'admin'}
               />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
+          <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
             <ListTodo size={48} className="mx-auto text-slate-300 mb-4" />
-            <h4 className="text-lg font-medium text-slate-900">No tasks found</h4>
-            <p className="text-slate-500 text-sm">Tasks assigned to you will appear here.</p>
+            <h4 className="text-lg font-black text-slate-900 tracking-tight">No tasks found</h4>
+            <p className="text-slate-400 text-sm mt-1">Tasks assigned to you will appear here.</p>
           </div>
         )}
       </div>

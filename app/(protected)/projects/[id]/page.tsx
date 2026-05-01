@@ -3,41 +3,71 @@
 import React from 'react';
 import { useParams } from 'next/navigation';
 import { TaskCard } from '@/components/feature/TaskCard';
+import { ProjectNavbar } from '@/components/feature/ProjectNavbar';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { Plus, Users, Calendar, ListTodo } from 'lucide-react';
+import { Plus, ListTodo, MoreVertical, Layout, Trash2, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const [data, setData] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
+  const [isStageModalOpen, setIsStageModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const [selectedStage, setSelectedStage] = React.useState('Analysis');
   const [taskData, setTaskData] = React.useState({
     title: '',
     description: '',
     dueDate: '',
     assignedTo: '',
   });
-  const [memberEmail, setMemberEmail] = React.useState('');
-  const [isAddingMember, setIsAddingMember] = React.useState(false);
-  const [session, setSession] = React.useState<any>(null);
+
+  const [expandedStages, setExpandedStages] = React.useState<Set<string>>(new Set(['Analysis']));
+  const [newStageName, setNewStageName] = React.useState('');
+
+  const toggleStage = (stageName: string) => {
+    const newExpanded = new Set(expandedStages);
+    if (newExpanded.has(stageName)) {
+      newExpanded.delete(stageName);
+    } else {
+      newExpanded.add(stageName);
+    }
+    setExpandedStages(newExpanded);
+  };
+
+  const handleDeleteStage = async (stageName: string) => {
+    if (!confirm(`⚠️ WARNING: Deleting the stage "${stageName}" will also PERMANENTLY DELETE all tasks inside it. Are you sure?`)) return;
+    try {
+      const res = await fetch(`/api/projects/${id}/stages/${encodeURIComponent(stageName)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) fetchProjectDetails();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const fetchProjectDetails = async () => {
+    // ... existing code
     try {
       const [projectRes, sessionRes] = await Promise.all([
         fetch(`/api/projects/${id}`),
-        fetch('/api/auth/session') // I need to verify this endpoint exists or create it
+        fetch('/api/auth/session')
       ]);
-      
+
       const projectJson = await projectRes.json();
       if (projectRes.ok) setData(projectJson);
-      
+
       if (sessionRes.ok) {
         const sessionJson = await sessionRes.json();
-        setSession(sessionJson);
+        localStorage.setItem('session', JSON.stringify(sessionJson));
       }
     } catch (error) {
       console.error('Failed to fetch project details', error);
@@ -45,6 +75,14 @@ export default function ProjectDetailPage() {
       setIsLoading(false);
     }
   };
+
+  const getSession = () => {
+    if (typeof window === 'undefined') return null;
+    const s = localStorage.getItem('session');
+    return s ? JSON.parse(s) : null;
+  };
+
+  const session = getSession();
 
   React.useEffect(() => {
     fetchProjectDetails();
@@ -57,15 +95,12 @@ export default function ProjectDetailPage() {
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...taskData, projectId: id }),
+        body: JSON.stringify({ ...taskData, projectId: id, stageName: selectedStage }),
       });
       if (res.ok) {
-        setIsModalOpen(false);
+        setIsTaskModalOpen(false);
         setTaskData({ title: '', description: '', dueDate: '', assignedTo: '' });
         fetchProjectDetails();
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Failed to create task');
       }
     } catch (error) {
       console.error('Failed to create task', error);
@@ -74,26 +109,24 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleAddMember = async (e: React.FormEvent) => {
+  const handleAddStage = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsAddingMember(true);
+    setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/projects/${id}/add-member`, {
+      const res = await fetch(`/api/projects/${id}/stages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: memberEmail }),
+        body: JSON.stringify({ name: newStageName }),
       });
       if (res.ok) {
-        setMemberEmail('');
+        setNewStageName('');
+        setIsStageModalOpen(false);
         fetchProjectDetails();
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Failed to add member');
       }
     } catch (error) {
-      console.error('Failed to add member', error);
+      console.error(error);
     } finally {
-      setIsAddingMember(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -115,170 +148,307 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleSyncSquad = async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/sync-squad`, {
+        method: 'PATCH',
+      });
+      if (res.ok) fetchProjectDetails();
+    } catch (error) {
+      console.error('Failed to sync squad', error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) fetchProjectDetails();
+    } catch (error) {
+      console.error('Failed to delete task', error);
+    }
+  };
+
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-    </div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen space-y-4">
+        <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <p className="text-slate-400 font-bold animate-pulse">Loading Project Details...</p>
+      </div>
+    );
   }
 
   if (!data) return <div>Project not found</div>;
 
   const { project, tasks } = data;
+  const stages = project.stages || [{ name: 'Analysis', order: 1, color: '#f59e0b' }];
+
+  const filteredTasks = tasks.filter((t: any) =>
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t: any) => t.status === 'done').length;
+  const inProgressTasks = tasks.filter((t: any) => t.status === 'in-progress').length;
+  const backlogTasks = tasks.filter((t: any) => t.status === 'todo').length;
+  const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-bold text-slate-900">{project.name}</h2>
-              <Badge variant="admin">Admin Controlled</Badge>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <Users size={16} />
-                <span>{project.members.length} Members</span>
+    <div className="min-h-screen bg-slate-50/50 -m-8 p-8">
+      <ProjectNavbar
+        projectName={project.name}
+        members={project.members}
+        onAddStage={() => setIsStageModalOpen(true)}
+        onSearch={setSearchQuery}
+        onSyncSquad={handleSyncSquad}
+        isAdmin={session?.role === 'admin'}
+      />
+
+      {/* Project Stats Visualization */}
+      <div className="max-w-5xl mx-auto mb-10">
+        <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Project Completion</h2>
+                <span className="text-sm font-black text-indigo-600">{progressPercent}%</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Calendar size={16} />
-                <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
+              <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-50">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 1.5, ease: "circOut" }}
+                  className="h-full bg-indigo-600 rounded-full"
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-3 font-medium">Metric : (Completed Tasks ÷ Total Tasks) × 100</p>
+            </div>
+
+            <div className="grid grid-cols-2 min-[400px]:grid-cols-4 gap-6 md:gap-12 mt-4 md:mt-0">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pool</span>
+                <span className="text-xl font-black text-slate-800">{totalTasks}</span>
+              </div>
+              <div className="flex flex-col border-l border-slate-100 pl-6 md:pl-8">
+                <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest mb-1">Active</span>
+                <span className="text-xl font-black text-slate-800">{inProgressTasks}</span>
+              </div>
+              <div className="flex flex-col min-[400px]:border-l border-slate-100 min-[400px]:pl-6 md:pl-8">
+                <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">Verified</span>
+                <span className="text-xl font-black text-slate-800">{completedTasks}</span>
+              </div>
+              <div className="flex flex-col border-l border-slate-100 pl-6 md:pl-8">
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Backlog</span>
+                <span className="text-xl font-black text-slate-800">{backlogTasks}</span>
               </div>
             </div>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} className="gap-2 shrink-0">
-            <Plus size={18} />
-            Add Task
-          </Button>
         </div>
       </div>
 
-      {/* Team Members Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <ListTodo size={20} className="text-indigo-600" />
-              Project Tasks
-            </h3>
-            <div className="flex gap-2">
-              <Badge variant="todo">{tasks.filter((t: any) => t.status === 'todo').length} Todo</Badge>
-              <Badge variant="in-progress">{tasks.filter((t: any) => t.status === 'in-progress').length} In Progress</Badge>
-              <Badge variant="done">{tasks.filter((t: any) => t.status === 'done').length} Done</Badge>
-            </div>
-          </div>
+      {/* Vertical Stages Layout */}
+      <div className="max-w-5xl mx-auto space-y-6 pb-20">
+        {stages.sort((a: any, b: any) => a.order - b.order).map((stage: any, index: number) => {
+          const isExpanded = expandedStages.has(stage.name);
+          const stageTasks = filteredTasks.filter((t: any) => t.stageName === stage.name);
 
-          {tasks.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {tasks.map((task: any) => (
-                <TaskCard 
-                  key={task._id} 
-                  task={task} 
-                  onStatusUpdate={handleStatusUpdate}
-                  canUpdateStatus={true}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
-              <ListTodo size={48} className="mx-auto text-slate-300 mb-4" />
-              <h4 className="text-lg font-medium text-slate-900">No tasks in this project</h4>
-              <p className="text-slate-500 text-sm">Create the first task to start tracking progress.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar: Team Members */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                <Users size={18} className="text-indigo-600" />
-                Team Members
-              </h4>
-            </div>
-
-            <div className="space-y-4">
-              {project.members.map((member: any) => (
-                <div key={member._id} className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                    {member.name.charAt(0).toUpperCase()}
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              key={stage.name}
+              className="group"
+            >
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+                {/* Stage Header */}
+                <div
+                  onClick={() => toggleStage(stage.name)}
+                  className="p-5 px-8 flex items-center justify-between cursor-pointer select-none bg-slate-50/30 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-1.5 h-6 rounded-full"
+                      style={{ backgroundColor: stage.color }}
+                    />
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-base tracking-tight">{stage.name}</h3>
+                      <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">{stageTasks.length} Tasks</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{member.name}</p>
-                    <p className="text-xs text-slate-500">{member.email}</p>
+                  <div className="flex items-center gap-4">
+                    {session?.role === 'admin' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteStage(stage.name);
+                        }}
+                        className="p-2 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                    <motion.div
+                      animate={{ rotate: isExpanded ? 90 : 0 }}
+                      className="text-slate-400"
+                    >
+                      <ArrowRight size={18} />
+                    </motion.div>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {session?.role === 'admin' && (
-              <form onSubmit={handleAddMember} className="pt-4 border-t border-slate-100 space-y-3">
-                <Input 
-                  placeholder="Collaborator email" 
-                  type="email"
-                  value={memberEmail}
-                  onChange={(e) => setMemberEmail(e.target.value)}
-                  required
-                />
-                <Button size="sm" className="w-full" isLoading={isAddingMember}>
-                  Add Member
-                </Button>
-              </form>
-            )}
-          </div>
-        </div>
+                {/* Tasks Body */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <div className="p-8 pt-2 space-y-6">
+                        <div className="flex flex-col gap-5 pb-4">
+                          <AnimatePresence mode="popLayout">
+                            {stageTasks.map((task: any) => (
+                              <motion.div
+                                layout
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                key={task._id}
+                              >
+                                <TaskCard
+                                  task={task}
+                                  onStatusUpdate={handleStatusUpdate}
+                                  onDelete={handleDeleteTask}
+                                  currentUserId={session?.id}
+                                  isAdmin={session?.role === 'admin'}
+                                />
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+
+                          {session?.role === 'admin' && (
+                            <button
+                              onClick={() => {
+                                setSelectedStage(stage.name);
+                                setIsTaskModalOpen(true);
+                              }}
+                              className="w-full p-6 rounded-3xl border-2 border-dashed border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all flex items-center justify-center gap-3 text-slate-400 hover:text-indigo-600"
+                            >
+                              <Plus size={20} />
+                              <span className="text-xs font-bold uppercase tracking-widest">New Task</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          );
+        })}
+
+        {/* Global Add Stage Button at the bottom */}
+        {session?.role === 'admin' && (
+          <button
+            onClick={() => setIsStageModalOpen(true)}
+            className="w-full py-6 rounded-3xl border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-3 group"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-all">
+              <Layout size={20} />
+            </div>
+            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">Add New Project Stage</span>
+          </button>
+        )}
       </div>
 
-      {/* Create Task Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={`New Task for ${project.name}`}
+      {/* Task Creation Modal */}
+      <Modal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        title={`Task Assignment for ${selectedStage}`}
       >
-        <form onSubmit={handleCreateTask} className="space-y-4">
-          <Input 
-            label="Task Title" 
-            placeholder="e.g. Design Navbar" 
+        <form onSubmit={handleCreateTask} className="space-y-6">
+          <Input
+            label="Task Title"
+            placeholder="e.g. Database Setup"
             value={taskData.title}
             onChange={(e) => setTaskData({ ...taskData, title: e.target.value })}
             required
           />
-          <Input 
-            label="Description" 
-            placeholder="What needs to be done?" 
+          <Input
+            label="Description"
+            placeholder="Enter task details..."
             value={taskData.description}
             onChange={(e) => setTaskData({ ...taskData, description: e.target.value })}
           />
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Assign To Member</label>
-            <select 
-              className="w-full flex h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              value={taskData.assignedTo}
-              onChange={(e) => setTaskData({ ...taskData, assignedTo: e.target.value })}
-            >
-              <option value="">Unassigned</option>
+
+          <div className="space-y-4">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Assign Member</label>
+            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-3 md:gap-4">
               {project.members.map((member: any) => (
-                <option key={member._id} value={member._id}>
-                  {member.name} ({member.email})
-                </option>
+                <button
+                  key={member._id}
+                  type="button"
+                  onClick={() => setTaskData({ ...taskData, assignedTo: member._id })}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all",
+                    taskData.assignedTo === member._id
+                      ? "border-indigo-500 bg-indigo-50"
+                      : "border-slate-50 bg-slate-50/50 hover:bg-slate-50"
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sm font-bold text-slate-700 shadow-sm">
+                    {member.name.charAt(0)}
+                  </div>
+                  <span className="text-[10px] font-bold text-center truncate w-full">{member.name.split(' ')[0]}</span>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
-          <Input 
-            label="Due Date" 
+          <Input
+            label="Deadline"
             type="date"
             value={taskData.dueDate}
             onChange={(e) => setTaskData({ ...taskData, dueDate: e.target.value })}
           />
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
+          <div className="flex justify-end gap-3 pt-6">
+            <Button variant="ghost" type="button" onClick={() => setIsTaskModalOpen(false)} className="rounded-2xl">
               Cancel
             </Button>
-            <Button type="submit" isLoading={isSubmitting}>
+            <Button type="submit" isLoading={isSubmitting} className="rounded-2xl px-8 shadow-lg shadow-indigo-100">
               Create Task
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Stage Creation Modal */}
+      <Modal
+        isOpen={isStageModalOpen}
+        onClose={() => setIsStageModalOpen(false)}
+        title="Add New Project Stage"
+      >
+        <form onSubmit={handleAddStage} className="space-y-6">
+          <Input
+            label="Stage Name"
+            placeholder="e.g. Quality Assurance"
+            value={newStageName}
+            onChange={(e) => setNewStageName(e.target.value)}
+            required
+          />
+          <div className="flex justify-end gap-3 pt-6">
+            <Button variant="ghost" type="button" onClick={() => setIsStageModalOpen(false)} className="rounded-2xl">
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isSubmitting} className="rounded-2xl px-8">
+              Create Stage
             </Button>
           </div>
         </form>

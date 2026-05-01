@@ -48,36 +48,41 @@ export const Sidebar = () => {
   return (
     <>
       {/* Mobile Toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className={cn("lg:hidden fixed top-4 left-4 z-[45]", isOpen && "hidden")}>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2"
+          onClick={() => setIsOpen(true)}
+          className="p-2 bg-white/80 backdrop-blur-md border-slate-200"
         >
-          {isOpen ? <X size={20} /> : <Menu size={20} />}
+          <Menu size={20} className="text-slate-800" />
         </Button>
       </div>
 
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45]"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-2xl",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center gap-3 px-6 py-8 border-b border-slate-800">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-              P
+          <div className="flex items-center justify-between px-6 py-6 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                P
+              </div>
+              <h1 className="text-xl font-bold text-white tracking-tight">PM Manager</h1>
             </div>
-            <h1 className="text-xl font-bold text-white tracking-tight">PM Manager</h1>
+            <button onClick={() => setIsOpen(false)} className="lg:hidden p-1 text-slate-400 hover:text-white transition-colors">
+               <X size={20} />
+            </button>
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2">

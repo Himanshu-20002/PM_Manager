@@ -27,6 +27,7 @@ export async function GET() {
 
     return NextResponse.json(team);
   } catch (error: any) {
+    console.error('[API Team Error]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

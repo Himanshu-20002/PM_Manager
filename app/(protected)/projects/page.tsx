@@ -62,8 +62,8 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 font-outfit">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-12 lg:pt-0 px-2 lg:px-0">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Projects</h2>
           <p className="text-slate-500 text-sm mt-1">Manage your team's initiatives</p>

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import User from '@/models/User';
@@ -65,10 +66,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Auth session invalid' }, { status: 401 });
     }
 
+    // Auto-add all 'joined' members from the Admin's team
+    const Team = mongoose.models.Team || (await import('@/models/Team')).default;
+    const adminTeam = await Team.findOne({ owner: userId });
+    
+    let allMembers = [userId];
+    if (adminTeam) {
+      const joinedMembers = adminTeam.members
+        .filter((m: any) => m.status === 'joined')
+        .map((m: any) => m.user.toString());
+      allMembers = Array.from(new Set([...allMembers, ...joinedMembers]));
+    }
+
     const project = await Project.create({
       ...validation.data,
       createdBy: userId,
-      members: validation.data.members || [userId]
+      members: allMembers
     });
 
     return NextResponse.json(project, { status: 201 });
