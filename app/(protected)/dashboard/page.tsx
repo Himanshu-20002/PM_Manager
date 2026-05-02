@@ -7,8 +7,7 @@ import {
   CheckSquare, 
   Clock, 
   AlertCircle, 
-  ListTodo,
-  TrendingUp
+  ListTodo
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -23,6 +22,8 @@ export default function DashboardPage() {
     leftToDo: 0
   });
   const [isLoading, setIsLoading] = React.useState(true);
+
+
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -68,6 +69,7 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+
   const handleStatusUpdate = async (taskId: string, newStatus: string) => {
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
@@ -89,6 +91,7 @@ export default function DashboardPage() {
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
     </div>;
   }
+  const isMember = session?.role === 'member';
 
   const statCards = [
     { title: 'Total Tasks', value: stats.total, icon: ListTodo, color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -97,7 +100,9 @@ export default function DashboardPage() {
     { title: 'Left to Do', value: stats.leftToDo, icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
 
-  const isMember = session?.role === 'member';
+
+
+
 
   return (
     <div className="space-y-6 md:space-y-8 font-outfit">

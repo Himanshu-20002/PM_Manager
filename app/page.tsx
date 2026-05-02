@@ -6,9 +6,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="flex items-center justify-between px-6 py-6 max-w-7xl mx-auto">
+      <nav className="flex   items-center justify-between px-6 py-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-xl">
             P
           </div>
           <span className="text-xl font-bold text-slate-900">PM Manager</span>
@@ -25,7 +25,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <main>
-        <section className="px-6 pt-20 pb-32 max-w-7xl mx-auto text-center">
+        <section className="px-6 pt-20 pb-32 max-w-7xl mx-auto text-center ">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold mb-8 uppercase tracking-wider">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -56,7 +56,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section className="bg-slate-50 py-24 px-6 border-y border-slate-100">
+        <section className="bg-indigo-50 py-24 px-6 border-y  border-slate-100">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
               <div className="space-y-4">

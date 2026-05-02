@@ -9,6 +9,7 @@ import { Plus, Briefcase } from 'lucide-react';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = React.useState<any[]>([]);
+  const [session, setSession] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -26,8 +27,18 @@ export default function ProjectsPage() {
     }
   };
 
+  const fetchSession = async () => {
+    try {
+      const res = await fetch('/api/auth/session');
+      if (res.ok) setSession(await res.json());
+    } catch (e) {
+      // ignore
+    }
+  };
+
   React.useEffect(() => {
     fetchProjects();
+    fetchSession();
   }, []);
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -77,7 +88,25 @@ export default function ProjectsPage() {
       {projects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map(project => (
-            <ProjectCard key={project._id} project={project} />
+            <ProjectCard 
+              key={project._id} 
+              project={project} 
+              isAdmin={session?.role === 'admin'}
+              onDelete={async (id: string) => {
+                if (!confirm('Delete this project and all its tasks?')) return;
+                try {
+                  const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+                  if (res.ok) fetchProjects();
+                  else {
+                    const err = await res.json();
+                    alert(err.error || 'Failed to delete project');
+                  }
+                } catch (e) {
+                  console.error('Delete failed', e);
+                  alert('Failed to delete project');
+                }
+              }}
+            />
           ))}
         </div>
       ) : (

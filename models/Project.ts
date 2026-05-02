@@ -8,7 +8,7 @@ const ProjectSchema = new mongoose.Schema({
     type: [{
       name: { type: String, required: true },
       order: { type: Number, default: 0 },
-      color: { type: String, default: '#6366f1' } // Default indigo
+      color: { type: String, default: '#6366f1' } 
     }],
     default: [
       { name: 'Analysis', order: 1, color: '#f59e0b' },

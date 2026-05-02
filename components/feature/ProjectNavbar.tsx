@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Users, Bell, Plus, LayoutGrid, RefreshCcw } from 'lucide-react';
+import { Search, Users, Bell,  LayoutGrid, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';

@@ -1,9 +1,7 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
-import { Briefcase, Users, ArrowRight } from 'lucide-react';
-import { Badge } from '@/components/ui/Badge';
+import { Briefcase, Users, ArrowRight, Trash2 } from 'lucide-react';
 
 interface Project {
   _id: string;
@@ -14,19 +12,34 @@ interface Project {
   };
 }
 
-export const ProjectCard = ({ project }: { project: Project }) => {
+export const ProjectCard = ({ project, isAdmin, onDelete }: { project: Project, isAdmin?: boolean, onDelete?: (id: string) => void }) => {
   return (
     <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
       <div className="flex justify-between items-start mb-4">
         <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
           <Briefcase size={20} />
         </div>
-        <Link 
-          href={`/projects/${project._id}`}
-          className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-colors"
-        >
-          <ArrowRight size={20} />
-        </Link>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!confirm('Delete this project and all its tasks? This action cannot be undone.')) return;
+                onDelete && onDelete(project._id);
+              }}
+              className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+              aria-label="Delete project"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+          <Link 
+            href={`/projects/${project._id}`}
+            className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-colors"
+          >
+            <ArrowRight size={20} />
+          </Link>
+        </div>
       </div>
 
       <h4 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">

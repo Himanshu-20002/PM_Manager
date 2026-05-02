@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Team from '@/models/Team';
-import User from '@/models/User';
+import '@/models/User';
 import { getSession } from '@/lib/auth';
 
 // GET team details

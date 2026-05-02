@@ -3,12 +3,9 @@ import mongoose from 'mongoose';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  throw new Error('MONGODB_URI environment variable not defined');
 }
 
-/**
- * Global cache to prevent multiple connections during development hot reloads.
- */
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -29,7 +26,6 @@ async function dbConnect() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      console.log('✅ MongoDB Connected Successfully');
       return mongoose;
     });
   }

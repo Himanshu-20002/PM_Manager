@@ -15,6 +15,7 @@ export default function TeamPage() {
   const [inviteEmail, setInviteEmail] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [lastSynced, setLastSynced] = React.useState<string | null>(null);
+  const [showInviteInput, setShowInviteInput] = React.useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -39,7 +40,6 @@ export default function TeamPage() {
 
   React.useEffect(() => {
     fetchData();
-    console.log('🚀 Team Interface Initialized');
   }, []);
 
   const handleCreateTeam = async (e: React.FormEvent) => {
@@ -73,6 +73,7 @@ export default function TeamPage() {
       });
       if (res.ok) {
         setInviteEmail('');
+        setShowInviteInput(false);
         fetchData();
       }
     } catch (error) {
@@ -147,7 +148,7 @@ export default function TeamPage() {
   return (
     <div className="space-y-12 max-w-4xl mx-auto pb-20">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-100 pb-8">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-100 pb-8 relative">
         <div className="text-center md:text-left">
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{team?.name}</h2>
           <p className="text-slate-500 mt-1 flex items-center justify-center md:justify-start gap-2 text-sm">
@@ -159,17 +160,58 @@ export default function TeamPage() {
             )}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchData}
-          disabled={isLoading}
-          className="flex items-center gap-2 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
-        >
-          <RefreshCcw size={16} className={cn(isLoading && "animate-spin")} />
-          Sync Squad
-        </Button>
+        <div className="flex items-center gap-3">
+          {isOwner && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowInviteInput(!showInviteInput)}
+              className={cn(
+                "flex items-center gap-2 border-slate-200 transition-all shadow-sm rounded-full",
+                showInviteInput ? "bg-indigo-50 text-indigo-600 border-indigo-200" : "text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-slate-50"
+              )}
+            >
+              <UserPlus size={16} />
+              <span className="hidden sm:inline">Invite Member</span>
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={isLoading}
+            className="flex items-center gap-2 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm rounded-full"
+          >
+            <RefreshCcw size={16} className={cn(isLoading && "animate-spin")} />
+            <span className="hidden sm:inline">Sync</span>
+          </Button>
+        </div>
       </div>
+
+      {/* Inline Invite Form */}
+      {isOwner && showInviteInput && (
+        <div className="py-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-white/50 backdrop-blur-sm border border-indigo-100/50 p-6 rounded-2xl shadow-lg shadow-indigo-100/20 max-w-xl mx-auto flex flex-col items-center">
+            <h4 className="text-slate-800 font-semibold mb-4 text-sm flex items-center gap-2">
+              <span className="p-1.5 bg-indigo-100 text-indigo-600 rounded-md"><UserPlus size={14} /></span>
+              Add a new squad member
+            </h4>
+            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row items-center gap-3 w-full">
+              <Input
+                placeholder="colleague@company.com"
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                required
+                className="h-11 border-slate-200 bg-white focus:border-indigo-500 text-sm w-full rounded-xl"
+              />
+              <Button isLoading={isSubmitting} className="w-full sm:w-auto shrink-0 h-11 px-6 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md transition-colors text-white">
+                Send Invite
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Gamified Team View */}
       <div className="flex flex-col items-center space-y-12">
@@ -201,7 +243,7 @@ export default function TeamPage() {
             <div className="h-px bg-slate-200 flex-1" />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 place-items-center">
+          <div className="flex flex-wrap justify-center gap-8 md:gap-12 w-full max-w-4xl mx-auto">
             {team?.members?.map((member: any) => (
               <div key={member.user._id} className="group flex flex-col items-center">
                 <div className={cn(
@@ -256,33 +298,7 @@ export default function TeamPage() {
           </div>
         )}
 
-        {/* Invite form for Admin */}
-        {isOwner && (
-          <div className="w-full mt-30 max-w-6xl bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden">
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-violet-500"></div>
-            <h4 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3 tracking-tight">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                <UserPlus size={16} />
-              </div>
-              Invite Team Member
-            </h4>
-            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row items-center gap-3">
-              <div className="w-full sm:flex-1">
-                <Input
-                  placeholder="colleague@company.com"
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  required
-                  className="h-12 border-slate-200 focus:border-indigo-500 text-sm w-full"
-                />
-              </div>
-              <Button isLoading={isSubmitting} className="w-full sm:w-auto shrink-0 h-11 px-8 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 shadow-md">
-                Send Invite
-              </Button>
-            </form>
-          </div>
-        )}
+        {/* Removed bulky Invite form for Admin */}
       </div>
     </div>
   );

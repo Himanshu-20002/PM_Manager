@@ -6,9 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Briefcase,
-  CheckSquare,
   LogOut,
-  PlusCircle,
   Menu,
   X,
   Users,
@@ -30,12 +28,8 @@ export const Sidebar = () => {
   ];
 
   const handleLogout = async () => {
-    // In a real app, you might want to call an API to clear cookies on the server
-    // For this simple version, we'll just redirect to login and hope the server handles it
-    // Or better, we can have a logout route. Let's assume we handle it via a simple API call.
+
     try {
-      // Clear the cookie via a dummy API or client side if possible
-      // Since it's HTTP Only, we need an API.
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
       router.refresh();
@@ -68,11 +62,16 @@ export const Sidebar = () => {
       )}
 
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-2xl",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex flex-col h-full">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 text-slate-300 bg-[#07172F] transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-2xl bg-cover bg-center overflow-hidden",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-[3px] z-0 pointer-events-none" />
+
+        <div className="relative flex flex-col h-full z-10">
           <div className="flex items-center justify-between px-6 py-6 border-b border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
@@ -81,7 +80,7 @@ export const Sidebar = () => {
               <h1 className="text-xl font-bold text-white tracking-tight">PM Manager</h1>
             </div>
             <button onClick={() => setIsOpen(false)} className="lg:hidden p-1 text-slate-400 hover:text-white transition-colors">
-               <X size={20} />
+              <X size={20} />
             </button>
           </div>
 

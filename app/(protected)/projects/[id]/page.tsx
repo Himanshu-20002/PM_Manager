@@ -7,8 +7,7 @@ import { ProjectNavbar } from '@/components/feature/ProjectNavbar';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
-import { Plus, ListTodo, MoreVertical, Layout, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Layout, Trash2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -182,22 +181,25 @@ export default function ProjectDetailPage() {
 
   if (!data) return <div>Project not found</div>;
 
-  const { project, tasks } = data;
+  const { project, tasks: allTasks } = data;
   const stages = project.stages || [{ name: 'Analysis', order: 1, color: '#f59e0b' }];
 
-  const filteredTasks = tasks.filter((t: any) =>
+  // Filter out ghost tasks that don't belong to any existing stage
+  const validTasks = allTasks.filter((t: any) => stages.some((s: any) => s.name === t.stageName));
+
+  const filteredTasks = validTasks.filter((t: any) =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t: any) => t.status === 'done').length;
-  const inProgressTasks = tasks.filter((t: any) => t.status === 'in-progress').length;
-  const backlogTasks = tasks.filter((t: any) => t.status === 'todo').length;
+  const totalTasks = validTasks.length;
+  const completedTasks = validTasks.filter((t: any) => t.status === 'done').length;
+  const inProgressTasks = validTasks.filter((t: any) => t.status === 'in-progress').length;
+  const backlogTasks = validTasks.filter((t: any) => t.status === 'todo').length;
   const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 -m-8 p-8">
+    <div className="min-h-screen bg-slate-50/50 overflow-hidden" style={{ scrollbarGutter: 'stable' }}>
       <ProjectNavbar
         projectName={project.name}
         members={project.members}
@@ -250,8 +252,8 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Vertical Stages Layout */}
-      <div className="max-w-5xl mx-auto space-y-6 pb-20">
-        {stages.sort((a: any, b: any) => a.order - b.order).map((stage: any, index: number) => {
+      <div className="max-w-5xl mx-auto space-y-6 pb-20" style={{ contain: 'layout' }}>
+        {[...stages].sort((a: any, b: any) => a.order - b.order).map((stage: any, index: number) => {
           const isExpanded = expandedStages.has(stage.name);
           const stageTasks = filteredTasks.filter((t: any) => t.stageName === stage.name);
 
@@ -263,7 +265,7 @@ export default function ProjectDetailPage() {
               key={stage.name}
               className="group"
             >
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md" style={{ contain: 'layout' }}>
                 {/* Stage Header */}
                 <div
                   onClick={() => toggleStage(stage.name)}
@@ -301,15 +303,17 @@ export default function ProjectDetailPage() {
                 </div>
 
                 {/* Tasks Body */}
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {isExpanded && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                      style={{ willChange: 'height' }}
                     >
-                      <div className="p-8 pt-2 space-y-6">
+                      <div className="p-8 pt-2 space-y-6" style={{ contain: 'layout' }}>
                         <div className="flex flex-col gap-5 pb-4">
                           <AnimatePresence mode="popLayout">
                             {stageTasks.map((task: any) => (

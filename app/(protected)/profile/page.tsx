@@ -9,12 +9,10 @@ import {
    Award,
    Zap,
    Mail,
-   User as UserIcon,
    ShieldCheck,
    Star
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
    const [data, setData] = React.useState<any>(null);

@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, Clock, User, Trash2 } from 'lucide-react';
+import { CheckCircle2, Clock, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/Badge';
+
 
 interface Task {
   _id: string;
@@ -52,7 +52,7 @@ export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmi
     >
       {/* Decorative Glow */}
       <div className="absolute -right-8 -top-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-      
+
       {/* Sidebar Indicator */}
       <div className={cn(
         "absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500",
@@ -68,7 +68,7 @@ export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmi
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <button 
+            <button
               onClick={() => onDelete(task._id)}
               className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
               title="Delete Task"
@@ -142,7 +142,7 @@ export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmi
       )}
       {!isAssignedToMe && task.status !== 'done' && isAdmin && (
         <div className="mt-6 w-full py-2.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center gap-2 text-slate-400">
-           <span className="text-[9px] font-bold uppercase tracking-widest italic">Awaiting Assignee</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest italic">Awaiting Assignee</span>
         </div>
       )}
     </motion.div>

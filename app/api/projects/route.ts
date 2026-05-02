@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
-import User from '@/models/User';
+import '@/models/User';
 import { getSession } from '@/lib/auth';
 import { projectSchema } from '@/validators/project';
 
