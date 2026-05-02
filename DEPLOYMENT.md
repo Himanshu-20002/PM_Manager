@@ -65,10 +65,4 @@ npm run build      # build for production
 npm start          # run production build locally (requires build step)
 ```
 
----
-
-If you want, I can:
-- Add a `VERCEL.md` with step-by-step screenshots you can follow
-- Create a simple `vercel.json` with redirects or headers if you need custom routing
-- Prepare a minimal health-check endpoint for uptime monitoring
 
