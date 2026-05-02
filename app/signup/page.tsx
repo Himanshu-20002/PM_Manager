@@ -15,7 +15,7 @@ export default function SignupPage() {
     name: '',
     email: '',
     password: '',
-    role: 'member' as 'admin' | 'member',
+    role: 'admin' as 'admin' | 'member',
   });
   const [error, setError] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -60,52 +60,63 @@ export default function SignupPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* Role Selection */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, role: 'member' })}
-                className={cn(
-                  "p-4 rounded-xl border-2 text-left transition-all relative group",
-                  formData.role === 'member' 
-                    ? "border-indigo-600 bg-indigo-50/50" 
-                    : "border-slate-100 hover:border-slate-200 bg-slate-50/30"
-                )}
-              >
-                <div className={cn(
-                  "w-10 h-10 rounded-lg flex items-center justify-center mb-3",
-                  formData.role === 'member' ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-500"
-                )}>
-                  <UserIcon size={20} />
-                </div>
-                <p className="font-bold text-slate-900 text-sm">Member</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">I work on projects</p>
-                {formData.role === 'member' && (
-                  <CheckCircle2 className="absolute top-2 right-2 text-indigo-600" size={16} />
-                )}
-              </button>
+            {/* Role Selection */}
+            <div className="space-y-3 mb-8">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mb-4">Choose your role</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: 'admin' })}
+                  className={cn(
+                    "p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden group",
+                    formData.role === 'admin' 
+                      ? "border-indigo-600 bg-indigo-50/50 shadow-md ring-4 ring-indigo-50" 
+                      : "border-slate-100 hover:border-slate-200 bg-slate-50/30"
+                  )}
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300",
+                    formData.role === 'admin' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "bg-slate-200 text-slate-500"
+                  )}>
+                    <Shield size={24} />
+                  </div>
+                  <div className="inline-flex items-center gap-2 mb-1">
+                    <p className="font-black text-slate-900 text-sm tracking-tight">Team Leader</p>
+                    <span className="px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase">Admin</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-relaxed font-medium">I want to create projects and manage a team</p>
+                  {formData.role === 'admin' && (
+                    <div className="absolute top-3 right-3 bg-indigo-600 rounded-full p-0.5">
+                      <CheckCircle2 className="text-white" size={14} />
+                    </div>
+                  )}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, role: 'admin' })}
-                className={cn(
-                  "p-4 rounded-xl border-2 text-left transition-all relative group",
-                  formData.role === 'admin' 
-                    ? "border-indigo-600 bg-indigo-50/50" 
-                    : "border-slate-100 hover:border-slate-200 bg-slate-50/30"
-                )}
-              >
-                <div className={cn(
-                  "w-10 h-10 rounded-lg flex items-center justify-center mb-3",
-                  formData.role === 'admin' ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-500"
-                )}>
-                  <Shield size={20} />
-                </div>
-                <p className="font-bold text-slate-900 text-sm">Admin</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">I manage teams</p>
-                {formData.role === 'admin' && (
-                  <CheckCircle2 className="absolute top-2 right-2 text-indigo-600" size={16} />
-                )}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: 'member' })}
+                  className={cn(
+                    "p-5 rounded-2xl border-2 text-left transition-all relative group",
+                    formData.role === 'member' 
+                      ? "border-slate-600 bg-slate-50 shadow-md ring-4 ring-slate-50" 
+                      : "border-slate-100 hover:border-slate-200 bg-slate-50/30"
+                  )}
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300",
+                    formData.role === 'member' ? "bg-slate-800 text-white shadow-lg shadow-slate-200" : "bg-slate-200 text-slate-500"
+                  )}>
+                    <UserIcon size={24} />
+                  </div>
+                  <p className="font-black text-slate-900 text-sm tracking-tight mb-1">Team Member</p>
+                  <p className="text-[10px] text-slate-500 leading-relaxed font-medium">I want to join a team and work on tasks</p>
+                  {formData.role === 'member' && (
+                    <div className="absolute top-3 right-3 bg-slate-800 rounded-full p-0.5">
+                      <CheckCircle2 className="text-white" size={14} />
+                    </div>
+                  )}
+                </button>
+              </div>
             </div>
 
             <Input

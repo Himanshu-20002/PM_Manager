@@ -79,7 +79,16 @@ export default function ProjectsPage() {
           <h2 className="text-2xl font-bold text-slate-900">Projects</h2>
           <p className="text-slate-500 text-sm mt-1">Manage your team's initiatives</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+        <Button 
+          onClick={() => {
+            if (session?.role !== 'admin') {
+              alert('Only a Team Leader or Admin can create projects and assign them to members.');
+              return;
+            }
+            setIsModalOpen(true);
+          }} 
+          className="gap-2"
+        >
           <Plus size={18} />
           New Project
         </Button>
@@ -93,7 +102,6 @@ export default function ProjectsPage() {
               project={project} 
               isAdmin={session?.role === 'admin'}
               onDelete={async (id: string) => {
-                if (!confirm('Delete this project and all its tasks?')) return;
                 try {
                   const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
                   if (res.ok) fetchProjects();
@@ -114,7 +122,17 @@ export default function ProjectsPage() {
           <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
           <h4 className="text-lg font-medium text-slate-900">No projects yet</h4>
           <p className="text-slate-500 text-sm">Create your first project to get started.</p>
-          <Button variant="outline" className="mt-6" onClick={() => setIsModalOpen(true)}>
+          <Button 
+            variant="outline" 
+            className="mt-6" 
+            onClick={() => {
+              if (session?.role !== 'admin') {
+                alert('Only a Team Leader or Admin can create projects and assign them to members.');
+                return;
+              }
+              setIsModalOpen(true);
+            }}
+          >
             Create Project
           </Button>
         </div>

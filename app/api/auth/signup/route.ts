@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    
+
     const validation = signupSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
@@ -23,10 +23,9 @@ export async function POST(req: Request) {
 
     const hashedPassword = await hashPassword(password);
     const userCount = await User.countDocuments();
-    
-    // First user is admin by default. All subsequent signups are members.
-    // This prevents malicious users from creating admin accounts.
-    const finalRole = userCount === 0 ? 'admin' : 'member';
+
+    // First user is admin by default if not specified
+    const finalRole = userCount === 0 ? 'admin' : (role || 'member');
 
     const user = await User.create({
       name,
@@ -35,7 +34,7 @@ export async function POST(req: Request) {
       role: finalRole
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'User created successfully',
       user: { id: user._id, name: user.name, email: user.email, role: user.role }
     }, { status: 201 });
