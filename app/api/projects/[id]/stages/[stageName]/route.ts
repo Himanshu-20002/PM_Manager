@@ -22,6 +22,10 @@ export async function DELETE(
     const project = await Project.findById(id);
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
+    if (project.createdBy.toString() !== session.id?.toString()) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this project' }, { status: 403 });
+    }
+
     // 1. Remove the stage from the project
     project.stages = project.stages.filter((s: any) => s.name !== decodedStageName);
     await project.save();

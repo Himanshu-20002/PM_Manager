@@ -30,11 +30,10 @@ export async function GET(
     // Authorization checks
     const userId = session.id?.toString();
     const isMember = project.members?.some((m: any) => m._id?.toString() === userId);
-    const isAdmin = session.role === 'admin';
     const isCreator = project.createdBy?._id?.toString() === userId;
 
-    if (!isAdmin && !isMember && !isCreator) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!isMember && !isCreator) {
+      return NextResponse.json({ error: 'Forbidden: You do not have access to this project' }, { status: 403 });
     }
 
     // Fetch tasks for this project
@@ -58,6 +57,16 @@ export async function DELETE(
     }
 
     await dbConnect();
+
+    // Verify ownership before deletion
+    const project = await Project.findById(id);
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    if (project.createdBy.toString() !== session.id?.toString()) {
+      return NextResponse.json({ error: 'Forbidden: Only the project creator can delete this project' }, { status: 403 });
+    }
 
     // Remove tasks belonging to project
     await Task.deleteMany({ projectId: id });

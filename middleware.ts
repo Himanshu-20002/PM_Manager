@@ -8,7 +8,7 @@ if (!JWT_SECRET) {
 }
 const key = new TextEncoder().encode(JWT_SECRET);
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||

@@ -21,10 +21,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
     }
 
-    // Verify project exists
+    // Verify project exists and admin owns it
     const project = await Project.findById(validation.data.projectId);
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    if (project.createdBy.toString() !== session.id?.toString()) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this project' }, { status: 403 });
     }
 
     // Verify assigned user is a member of the project
@@ -58,14 +62,20 @@ export async function GET() {
     const userId = session.id?.toString();
 
     if (session.role === 'admin') {
-      tasks = await Task.find()
+      // Find projects created by this admin
+      const ownedProjects = await Project.find({ createdBy: userId }).select('_id');
+      const projectIds = ownedProjects.map(p => p._id);
+
+      tasks = await Task.find({ projectId: { $in: projectIds } })
         .populate('assignedTo', 'name email')
         .populate('projectId', 'name')
+        .sort({ createdAt: -1 })
         .lean();
     } else {
       tasks = await Task.find({ assignedTo: userId })
         .populate('assignedTo', 'name email')
         .populate('projectId', 'name')
+        .sort({ createdAt: -1 })
         .lean();
     }
 

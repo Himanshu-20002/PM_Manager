@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
+import Project from '@/models/Project';
 
 import { getSession } from '@/lib/auth';
 import { updateTaskSchema } from '@/validators/task';
@@ -41,8 +42,13 @@ export async function PATCH(
       }
     }
 
-    // Admin can update metadata, but status only if assigned
+    // Admin can update metadata if they own the project
     if (session.role === 'admin') {
+      const project = await Project.findById(task.projectId);
+      if (!project || project.createdBy.toString() !== session.id?.toString()) {
+        return NextResponse.json({ error: 'Forbidden: You do not own the project this task belongs to' }, { status: 403 });
+      }
+
       const validation = updateTaskSchema.safeParse(body);
       if (!validation.success) {
         return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
@@ -75,6 +81,16 @@ export async function DELETE(
     }
 
     await dbConnect();
+    const task = await Task.findById(id);
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    const project = await Project.findById(task.projectId);
+    if (!project || project.createdBy.toString() !== session.id?.toString()) {
+      return NextResponse.json({ error: 'Forbidden: You do not own the project this task belongs to' }, { status: 403 });
+    }
+
     await Task.findByIdAndDelete(id);
     return NextResponse.json({ message: 'Task deleted successfully' });
   } catch (error: any) {

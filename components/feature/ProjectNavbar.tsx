@@ -12,10 +12,12 @@ interface ProjectNavbarProps {
   onAddStage: () => void;
   onSearch: (query: string) => void;
   onSyncSquad?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
   isAdmin: boolean;
 }
 
-export const ProjectNavbar = ({ projectName, members, onAddStage, onSearch, onSyncSquad, isAdmin }: ProjectNavbarProps) => {
+export const ProjectNavbar = ({ projectName, members, onAddStage, onSearch, onSyncSquad, onRefresh, isRefreshing, isAdmin }: ProjectNavbarProps) => {
   const [isSquadOpen, setIsSquadOpen] = React.useState(false);
   const [isSyncing, setIsSyncing] = React.useState(false);
 
@@ -129,6 +131,18 @@ export const ProjectNavbar = ({ projectName, members, onAddStage, onSearch, onSy
               <span className="hidden sm:block">Add Stage</span>
             </Button>
           )}
+
+          <button 
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className={cn(
+              "w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 transition-all shadow-lg shadow-slate-200",
+              isRefreshing && "opacity-50 cursor-not-allowed"
+            )}
+            title="Refresh Project Data"
+          >
+            <RefreshCcw size={18} className={cn(isRefreshing && "animate-spin")} />
+          </button>
         </div>
       </div>
     </nav>

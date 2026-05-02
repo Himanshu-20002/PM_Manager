@@ -12,7 +12,7 @@ interface Task {
   description?: string;
   status: 'todo' | 'joining' | 'done' | 'in-progress';
   dueDate?: string;
-  assignedTo?: {
+  assignedTo?: string | {
     _id: string;
     name: string;
     email: string;
@@ -29,7 +29,12 @@ interface TaskCardProps {
 
 export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmin }: TaskCardProps) => {
   const [isUpdating, setIsUpdating] = React.useState(false);
-  const isAssignedToMe = String(task.assignedTo?._id) === String(currentUserId);
+  const isAssignedToMe = React.useMemo(() => {
+    const assignedId = typeof task.assignedTo === 'object' 
+      ? task.assignedTo?._id?.toString() 
+      : task.assignedTo?.toString();
+    return String(assignedId) === String(currentUserId);
+  }, [task.assignedTo, currentUserId]);
 
   const statusColors: any = {
     todo: 'bg-slate-400',
@@ -67,15 +72,6 @@ export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmi
           <span className="text-[9px] text-slate-400 font-black tracking-widest mt-1">ID: {task._id.slice(-6).toUpperCase()}</span>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <button
-              onClick={() => onDelete(task._id)}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
-              title="Delete Task"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
           <div className={cn(
             "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
             task.status === 'done' ? "bg-emerald-50 text-emerald-600" : task.status === 'in-progress' ? "bg-indigo-50 text-indigo-600" : "bg-slate-50 text-slate-500"
@@ -93,12 +89,26 @@ export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmi
 
       <div className="flex items-center justify-between mt-auto">
         <div className="flex items-center gap-3">
+          {isAdmin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(task._id);
+              }}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all bg-slate-50 lg:bg-transparent lg:opacity-0 lg:group-hover:opacity-100 mr-1"
+              title="Delete Task"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-100 flex items-center justify-center text-[11px] font-black text-indigo-600 shadow-sm">
-            {task.assignedTo?.name.charAt(0)}
+            {typeof task.assignedTo === 'object' ? task.assignedTo?.name?.charAt(0) : '?'}
           </div>
           <div className="flex flex-col">
             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Member</span>
-            <span className="text-[10px] font-bold text-slate-700">{task.assignedTo?.name.split(' ')[0]}</span>
+            <span className="text-[10px] font-bold text-slate-700">
+              {typeof task.assignedTo === 'object' ? task.assignedTo?.name?.split(' ')[0] : 'Assigned'}
+            </span>
           </div>
         </div>
 

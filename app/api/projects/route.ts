@@ -5,6 +5,7 @@ import Project from '@/models/Project';
 import '@/models/User';
 import { getSession } from '@/lib/auth';
 import { projectSchema } from '@/validators/project';
+import Team from '@/models/Team';
 
 export async function GET() {
   try {
@@ -15,25 +16,21 @@ export async function GET() {
 
     await dbConnect();
     
-    let projects;
     const userId = session.id?.toString();
 
-    if (session.role === 'admin') {
-      projects = await Project.find()
-        .populate('createdBy', 'name email')
-        .populate('members', 'name email')
-        .lean();
-    } else {
-      projects = await Project.find({ 
-        $or: [
-          { members: userId },
-          { createdBy: userId }
-        ]
-      })
-      .populate('createdBy', 'name email')
-      .populate('members', 'name email')
-      .lean();
-    }
+    // Both admins and members should only see projects they are part of.
+    // Specifically for admins, they should only see projects they created.
+    // For regular users, they see projects they are members of.
+    const projects = await Project.find({ 
+      $or: [
+        { members: userId },
+        { createdBy: userId }
+      ]
+    })
+    .populate('createdBy', 'name email')
+    .populate('members', 'name email')
+    .sort({ createdAt: -1 })
+    .lean();
 
     return NextResponse.json(projects);
   } catch (error: any) {
@@ -67,7 +64,6 @@ export async function POST(req: Request) {
     }
 
     // Auto-add all 'joined' members from the Admin's team
-    const Team = mongoose.models.Team || (await import('@/models/Team')).default;
     const adminTeam = await Team.findOne({ owner: userId });
     
     let allMembers = [userId];

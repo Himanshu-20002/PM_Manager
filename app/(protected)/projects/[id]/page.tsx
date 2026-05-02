@@ -18,6 +18,7 @@ export default function ProjectDetailPage() {
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
   const [isStageModalOpen, setIsStageModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
 
   const [selectedStage, setSelectedStage] = React.useState('Analysis');
@@ -53,8 +54,8 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const fetchProjectDetails = async () => {
-    // ... existing code
+  const fetchProjectDetails = async (showRefresh = true) => {
+    if (showRefresh) setIsRefreshing(true);
     try {
       const [projectRes, sessionRes] = await Promise.all([
         fetch(`/api/projects/${id}`),
@@ -72,6 +73,7 @@ export default function ProjectDetailPage() {
       console.error('Failed to fetch project details', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -141,6 +143,8 @@ export default function ProjectDetailPage() {
           ...prev,
           tasks: prev.tasks.map((t: any) => t._id === taskId ? { ...t, status: newStatus } : t)
         }));
+        // Also fetch fresh data to update stats and ensure full sync
+        fetchProjectDetails(false);
       }
     } catch (error) {
       console.error('Failed to update status', error);
@@ -206,6 +210,8 @@ export default function ProjectDetailPage() {
         onAddStage={() => setIsStageModalOpen(true)}
         onSearch={setSearchQuery}
         onSyncSquad={handleSyncSquad}
+        onRefresh={() => fetchProjectDetails(true)}
+        isRefreshing={isRefreshing}
         isAdmin={session?.role === 'admin'}
       />
 
@@ -271,7 +277,19 @@ export default function ProjectDetailPage() {
                   onClick={() => toggleStage(stage.name)}
                   className="p-5 px-8 flex items-center justify-between cursor-pointer select-none bg-slate-50/30 hover:bg-slate-50 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-1">
+                    {session?.role === 'admin' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteStage(stage.name);
+                        }}
+                        className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all bg-slate-100 lg:bg-transparent lg:opacity-0 lg:group-hover:opacity-100"
+                        title="Delete Stage"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                     <div
                       className="w-1.5 h-6 rounded-full"
                       style={{ backgroundColor: stage.color }}
@@ -281,21 +299,10 @@ export default function ProjectDetailPage() {
                       <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">{stageTasks.length} Tasks</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    {session?.role === 'admin' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteStage(stage.name);
-                        }}
-                        className="p-2 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+                  <div className="flex items-center">
                     <motion.div
                       animate={{ rotate: isExpanded ? 90 : 0 }}
-                      className="text-slate-400"
+                      className="text-slate-400 p-2"
                     >
                       <ArrowRight size={18} />
                     </motion.div>

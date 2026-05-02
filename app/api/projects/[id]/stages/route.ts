@@ -19,6 +19,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const project = await Project.findById(id);
     
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+
+    if (project.createdBy.toString() !== session.id?.toString()) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this project' }, { status: 403 });
+    }
     
     // Add new stage
     const nextOrder = project.stages.length + 1;

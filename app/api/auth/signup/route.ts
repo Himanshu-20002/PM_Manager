@@ -24,8 +24,9 @@ export async function POST(req: Request) {
     const hashedPassword = await hashPassword(password);
     const userCount = await User.countDocuments();
     
-    // First user is admin by default if not specified
-    const finalRole = userCount === 0 ? 'admin' : (role || 'member');
+    // First user is admin by default. All subsequent signups are members.
+    // This prevents malicious users from creating admin accounts.
+    const finalRole = userCount === 0 ? 'admin' : 'member';
 
     const user = await User.create({
       name,

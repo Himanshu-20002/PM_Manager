@@ -38,10 +38,14 @@ export async function POST(
       return NextResponse.json({ error: 'User not found in the system' }, { status: 404 });
     }
 
-    // 2. Find project
+    // 2. Find project and check ownership
     const project = await Project.findById(id);
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    if (project.createdBy.toString() !== session.id?.toString()) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this project' }, { status: 403 });
     }
 
     // 3. Check if already a member

@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const ProjectSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true }],
   stages: {
     type: [{
       name: { type: String, required: true },
