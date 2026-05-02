@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Users, Bell,  LayoutGrid, RefreshCcw } from 'lucide-react';
+import { Search, Users, Bell, LayoutGrid, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,9 +28,8 @@ export const ProjectNavbar = ({ projectName, members, onAddStage, onSearch, onSy
   };
 
   return (
-    <nav className="sticky top-8 z-40 mb-12 max-w-5xl mx-auto  md:px-0">
+    <nav className="sticky top-8 z-40 mb-12 max-w-5xl mx-auto md:px-0">
       <div className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl shadow-slate-200/50 rounded-3xl p-2 md:p-3 px-4 md:px-6 flex items-center justify-between gap-2 md:gap-4">
-        {/* Left: Branding & Search */}
         <div className="flex items-center gap-2 md:gap-6 flex-1 min-w-0">
           <div className="flex-col hidden md:flex shrink-0">
             <h1 className="text-sm md:text-lg font-black text-slate-900 tracking-tight leading-none truncate max-w-[150px]">
@@ -50,7 +49,6 @@ export const ProjectNavbar = ({ projectName, members, onAddStage, onSearch, onSy
           </div>
         </div>
 
-        {/* Center: Squad Control */}
         <div className="flex items-center gap-2 relative">
           <button
             onClick={() => setIsSquadOpen(!isSquadOpen)}
@@ -62,7 +60,7 @@ export const ProjectNavbar = ({ projectName, members, onAddStage, onSearch, onSy
             <Users size={18} />
             <span className="text-sm font-bold hidden md:block">Team Members</span>
             <div className="hidden min-[400px]:flex -space-x-2 ml-1 md:ml-2">
-              {members.slice(0, 3).map((m, i) => (
+              {members.slice(0, 3).map((m) => (
                 <div key={m._id} className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white bg-indigo-100 flex items-center justify-center text-[8px] md:text-[10px] font-bold text-indigo-600">
                   {m.name.charAt(0)}
                 </div>
@@ -114,7 +112,6 @@ export const ProjectNavbar = ({ projectName, members, onAddStage, onSearch, onSy
           </AnimatePresence>
         </div>
 
-        {/* Right: Global Actions */}
         <div className="flex items-center gap-2 md:gap-3">
           <div className="relative hidden sm:block">
             <button className="w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all">

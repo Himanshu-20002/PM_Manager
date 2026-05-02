@@ -55,10 +55,8 @@ export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmi
       layout
       className="relative group bg-white/60 backdrop-blur-sm rounded-[2rem] border border-white/50 shadow-sm p-6 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-500 overflow-hidden flex flex-col min-h-[220px] justify-between"
     >
-      {/* Decorative Glow */}
       <div className="absolute -right-8 -top-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
-      {/* Sidebar Indicator */}
       <div className={cn(
         "absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500",
         task.status === 'done' ? "bg-emerald-500" : task.status === 'in-progress' ? "bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]" : "bg-slate-200"
@@ -150,9 +148,21 @@ export const TaskCard = ({ task, onStatusUpdate, onDelete, currentUserId, isAdmi
           )}
         </motion.button>
       )}
-      {!isAssignedToMe && task.status !== 'done' && isAdmin && (
-        <div className="mt-6 w-full py-2.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center gap-2 text-slate-400">
-          <span className="text-[9px] font-bold uppercase tracking-widest italic">Awaiting Assignee</span>
+
+      {(!isAssignedToMe || task.status === 'done') && (
+        <div className={cn(
+          "mt-6 w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 border transition-all duration-300",
+          task.status === 'done' ? "bg-emerald-50 border-emerald-100 text-emerald-600" :
+          task.status === 'in-progress' ? "bg-indigo-50 border-indigo-100 text-indigo-600" :
+          "bg-slate-50 border-slate-100 text-slate-400"
+        )}>
+          {task.status === 'done' && <CheckCircle2 size={14} />}
+          {task.status === 'in-progress' && <Clock size={14} className="animate-pulse" />}
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]">
+            {task.status === 'done' ? 'Project Completed' :
+             task.status === 'in-progress' ? 'Task in Development' :
+             !task.assignedTo ? 'Awaiting Assignee' : 'Awaiting Member Start'}
+          </span>
         </div>
       )}
     </motion.div>

@@ -11,8 +11,13 @@ import { Plus, Layout, Trash2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
+import { useSession } from '@/lib/SessionContext';
+import { useData } from '@/lib/DataContext';
+
 export default function ProjectDetailPage() {
   const { id } = useParams();
+  const { session } = useSession();
+  const { tasks: globalTasks, refreshTasks, optimisticUpdateTask, isInitialLoading: isGlobalLoading } = useData();
   const [data, setData] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
@@ -57,18 +62,9 @@ export default function ProjectDetailPage() {
   const fetchProjectDetails = async (showRefresh = true) => {
     if (showRefresh) setIsRefreshing(true);
     try {
-      const [projectRes, sessionRes] = await Promise.all([
-        fetch(`/api/projects/${id}`),
-        fetch('/api/auth/session')
-      ]);
-
-      const projectJson = await projectRes.json();
-      if (projectRes.ok) setData(projectJson);
-
-      if (sessionRes.ok) {
-        const sessionJson = await sessionRes.json();
-        localStorage.setItem('session', JSON.stringify(sessionJson));
-      }
+      const res = await fetch(`/api/projects/${id}`);
+      const projectJson = await res.json();
+      if (res.ok) setData(projectJson);
     } catch (error) {
       console.error('Failed to fetch project details', error);
     } finally {
@@ -77,13 +73,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const getSession = () => {
-    if (typeof window === 'undefined') return null;
-    const s = localStorage.getItem('session');
-    return s ? JSON.parse(s) : null;
-  };
 
-  const session = getSession();
 
   React.useEffect(() => {
     fetchProjectDetails();
@@ -102,6 +92,7 @@ export default function ProjectDetailPage() {
         setIsTaskModalOpen(false);
         setTaskData({ title: '', description: '', dueDate: '', assignedTo: '' });
         fetchProjectDetails();
+        refreshTasks(true);
       }
     } catch (error) {
       console.error('Failed to create task', error);
@@ -132,6 +123,9 @@ export default function ProjectDetailPage() {
   };
 
   const handleStatusUpdate = async (taskId: string, newStatus: string) => {
+    // Optimistic Update
+    optimisticUpdateTask(taskId, newStatus);
+    
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
@@ -145,6 +139,7 @@ export default function ProjectDetailPage() {
         }));
         // Also fetch fresh data to update stats and ensure full sync
         fetchProjectDetails(false);
+        refreshTasks(true);
       }
     } catch (error) {
       console.error('Failed to update status', error);
@@ -168,13 +163,16 @@ export default function ProjectDetailPage() {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
       });
-      if (res.ok) fetchProjectDetails();
+      if (res.ok) {
+        fetchProjectDetails();
+        refreshTasks(true);
+      }
     } catch (error) {
       console.error('Failed to delete task', error);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isGlobalLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen space-y-4">
         <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
@@ -185,10 +183,15 @@ export default function ProjectDetailPage() {
 
   if (!data) return <div>Project not found</div>;
 
-  const { project, tasks: allTasks } = data;
+  const { project } = data;
+  
+  const allTasks = globalTasks.filter((t: any) => {
+    const pId = typeof t.projectId === 'object' ? t.projectId?._id : t.projectId;
+    return pId?.toString() === id?.toString();
+  });
+  
   const stages = project.stages || [{ name: 'Analysis', order: 1, color: '#f59e0b' }];
 
-  // Filter out ghost tasks that don't belong to any existing stage
   const validTasks = allTasks.filter((t: any) => stages.some((s: any) => s.name === t.stageName));
 
   const filteredTasks = validTasks.filter((t: any) =>
@@ -196,11 +199,11 @@ export default function ProjectDetailPage() {
     t.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalTasks = validTasks.length;
-  const completedTasks = validTasks.filter((t: any) => t.status === 'done').length;
-  const inProgressTasks = validTasks.filter((t: any) => t.status === 'in-progress').length;
-  const backlogTasks = validTasks.filter((t: any) => t.status === 'todo').length;
-  const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const totalCount = validTasks.length;
+  const completedCount = validTasks.filter((t: any) => t.status === 'done').length;
+  const devCount = validTasks.filter((t: any) => t.status === 'in-progress').length;
+  const backlogCount = validTasks.filter((t: any) => t.status === 'todo').length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-slate-50/50 overflow-hidden" style={{ scrollbarGutter: 'stable' }}>
@@ -215,7 +218,6 @@ export default function ProjectDetailPage() {
         isAdmin={session?.role === 'admin'}
       />
 
-      {/* Project Stats Visualization */}
       <div className="max-w-5xl mx-auto mb-10">
         <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -238,26 +240,26 @@ export default function ProjectDetailPage() {
             <div className="grid grid-cols-2 min-[400px]:grid-cols-4 gap-6 md:gap-12 mt-4 md:mt-0">
               <div className="flex flex-col">
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pool</span>
-                <span className="text-xl font-black text-slate-800">{totalTasks}</span>
+                <span className="text-xl font-black text-slate-800">{totalCount}</span>
               </div>
               <div className="flex flex-col border-l border-slate-100 pl-6 md:pl-8">
                 <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest mb-1">Active</span>
-                <span className="text-xl font-black text-slate-800">{inProgressTasks}</span>
+                <span className="text-xl font-black text-slate-800">{devCount}</span>
               </div>
               <div className="flex flex-col min-[400px]:border-l border-slate-100 min-[400px]:pl-6 md:pl-8">
                 <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">Verified</span>
-                <span className="text-xl font-black text-slate-800">{completedTasks}</span>
+                <span className="text-xl font-black text-slate-800">{completedCount}</span>
               </div>
               <div className="flex flex-col border-l border-slate-100 pl-6 md:pl-8">
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Backlog</span>
-                <span className="text-xl font-black text-slate-800">{backlogTasks}</span>
+                <span className="text-xl font-black text-slate-800">{backlogCount}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Vertical Stages Layout */}
+
       <div className="max-w-5xl mx-auto space-y-6 pb-20" style={{ contain: 'layout' }}>
         {[...stages].sort((a: any, b: any) => a.order - b.order).map((stage: any, index: number) => {
           const isExpanded = expandedStages.has(stage.name);
@@ -272,7 +274,7 @@ export default function ProjectDetailPage() {
               className="group"
             >
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md" style={{ contain: 'layout' }}>
-                {/* Stage Header */}
+
                 <div
                   onClick={() => toggleStage(stage.name)}
                   className="p-5 px-8 flex items-center justify-between cursor-pointer select-none bg-slate-50/30 hover:bg-slate-50 transition-colors"
@@ -309,7 +311,7 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
 
-                {/* Tasks Body */}
+
                 <AnimatePresence initial={false}>
                   {isExpanded && (
                     <motion.div
@@ -335,7 +337,7 @@ export default function ProjectDetailPage() {
                                   task={task}
                                   onStatusUpdate={handleStatusUpdate}
                                   onDelete={handleDeleteTask}
-                                  currentUserId={session?.id}
+                                  currentUserId={session?.id || ''}
                                   isAdmin={session?.role === 'admin'}
                                 />
                               </motion.div>
@@ -364,7 +366,7 @@ export default function ProjectDetailPage() {
           );
         })}
 
-        {/* Global Add Stage Button at the bottom */}
+
         {session?.role === 'admin' && (
           <button
             onClick={() => setIsStageModalOpen(true)}
@@ -378,7 +380,6 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
-      {/* Task Creation Modal */}
       <Modal
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
@@ -440,7 +441,7 @@ export default function ProjectDetailPage() {
         </form>
       </Modal>
 
-      {/* Stage Creation Modal */}
+
       <Modal
         isOpen={isStageModalOpen}
         onClose={() => setIsStageModalOpen(false)}

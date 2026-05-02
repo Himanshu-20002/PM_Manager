@@ -9,10 +9,13 @@ import {
   AlertCircle, 
   ListTodo
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useData } from '@/lib/DataContext';
+import { useSession } from '@/lib/SessionContext';
 
 export default function DashboardPage() {
-  const [session, setSession] = React.useState<any>(null);
-  const [tasks, setTasks] = React.useState<any[]>([]);
+  const { session } = useSession();
+  const { tasks, refreshTasks, optimisticUpdateTask } = useData();
   const [stats, setStats] = React.useState({
     total: 0,
     completed: 0,
@@ -21,76 +24,59 @@ export default function DashboardPage() {
     overdue: 0,
     leftToDo: 0
   });
-  const [isLoading, setIsLoading] = React.useState(true);
-
-
+  const [isLoading, setIsLoading] = React.useState(!tasks.length);
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [sessionRes, tasksRes] = await Promise.all([
-          fetch('/api/auth/session'),
-          fetch('/api/tasks')
-        ]);
+    refreshTasks().finally(() => setIsLoading(false));
+  }, [refreshTasks]);
 
-        if (sessionRes.ok) {
-          setSession(await sessionRes.json());
-        }
+  React.useEffect(() => {
+    if (tasks.length > 0) {
+      const now = new Date();
+      const completed = tasks.filter((t: any) => t.status === 'done').length;
+      const inProgress = tasks.filter((t: any) => t.status === 'in-progress').length;
+      const todo = tasks.filter((t: any) => t.status === 'todo').length;
+      const overdue = tasks.filter((t: any) => 
+        t.dueDate && new Date(t.dueDate) < now && t.status !== 'done'
+      ).length;
 
-        if (tasksRes.ok) {
-          const data = await tasksRes.json();
-          setTasks(data);
-          
-          // Calculate stats
-          const now = new Date();
-          const completed = data.filter((t: any) => t.status === 'done').length;
-          const inProgress = data.filter((t: any) => t.status === 'in-progress').length;
-          const todo = data.filter((t: any) => t.status === 'todo').length;
-          const overdue = data.filter((t: any) => 
-            t.dueDate && new Date(t.dueDate) < now && t.status !== 'done'
-          ).length;
-
-          setStats({
-            total: data.length,
-            completed,
-            inProgress,
-            todo,
-            overdue,
-            leftToDo: data.length - completed
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch dashboard data', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
+      setStats({
+        total: tasks.length,
+        completed,
+        inProgress,
+        todo,
+        overdue,
+        leftToDo: tasks.length - completed
+      });
+    }
+  }, [tasks]);
 
   const handleStatusUpdate = async (taskId: string, newStatus: string) => {
+    optimisticUpdateTask(taskId, newStatus);
+    
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) {
-        // Refresh local state
-        setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: newStatus } : t));
+      if (!res.ok) {
+        refreshTasks(true);
       }
     } catch (error) {
-      console.error('Failed to update task status', error);
+      console.error('Status update error:', error);
+      refreshTasks(true);
     }
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-    </div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
+
   const isMember = session?.role === 'member';
 
   const statCards = [
@@ -100,10 +86,6 @@ export default function DashboardPage() {
     { title: 'Left to Do', value: stats.leftToDo, icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
 
-
-
-
-
   return (
     <div className="space-y-6 md:space-y-8 font-outfit">
       <div className="pt-12 lg:pt-0 px-2 lg:px-0">
@@ -111,11 +93,10 @@ export default function DashboardPage() {
           {isMember ? 'My Tasks Dashboard' : 'Project Dashboard'}
         </h2>
         <p className="text-slate-400 text-xs md:text-sm mt-1 font-medium tracking-wide">
-          {isMember ? 'overview of your assigned responsibilities' : "overview of your team's performance"}
+          {isMember ? 'Overview of your assigned responsibilities' : "Overview of your team's performance"}
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statCards.map((stat) => (
           <div key={stat.title} className="p-5 md:p-6 bg-white rounded-3xl md:rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center group">
@@ -128,13 +109,14 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Tasks Section */}
       <div className="space-y-4 pt-4">
         <div className="flex items-center justify-between px-2 md:px-0">
           <h3 className="text-lg font-black text-slate-900 tracking-tight">
             {isMember ? 'Tasks Assigned to Me' : 'Recent Project Tasks'}
           </h3>
-          <Badge variant="secondary" className="border-indigo-100 text-indigo-500 bg-indigo-50 font-bold text-[10px] uppercase tracking-widest px-3 py-1">{tasks.length} total</Badge>
+          <Badge variant="secondary" className="border-indigo-100 text-indigo-500 bg-indigo-50 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+            {tasks.length} total
+          </Badge>
         </div>
         
         {tasks.length > 0 ? (
@@ -144,8 +126,8 @@ export default function DashboardPage() {
                 key={task._id} 
                 task={task} 
                 onStatusUpdate={handleStatusUpdate}
-                onDelete={() => {}} // Deletions should probably happen on Project detail page
-                currentUserId={session?.id}
+                onDelete={() => {}} 
+                currentUserId={session?.id || ''}
                 isAdmin={session?.role === 'admin'}
               />
             ))}
@@ -161,6 +143,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-// Utility import for stat grid
-import { cn } from '@/lib/utils';

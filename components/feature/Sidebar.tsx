@@ -14,10 +14,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { useSession } from '@/lib/SessionContext';
 
 export const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { refreshSession } = useSession();
   const [isOpen, setIsOpen] = React.useState(false);
 
   const navItems = [
@@ -28,20 +30,18 @@ export const Sidebar = () => {
   ];
 
   const handleLogout = async () => {
-
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+      await refreshSession();
       router.push('/login');
-      router.refresh();
     } catch (error) {
-      console.error('Logout failed', error);
+      console.error('Logout error:', error);
       router.push('/login');
     }
   };
 
   return (
     <>
-      {/* Mobile Toggle */}
       <div className={cn("lg:hidden fixed top-4 left-4 z-[45]", isOpen && "hidden")}>
         <Button
           variant="outline"
@@ -53,7 +53,6 @@ export const Sidebar = () => {
         </Button>
       </div>
 
-      {/* Backdrop */}
       {isOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45]"
@@ -61,14 +60,12 @@ export const Sidebar = () => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 text-slate-300 bg-[#07172F] transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-2xl bg-cover bg-center overflow-hidden",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-[3px] z-0 pointer-events-none" />
 
         <div className="relative flex flex-col h-full z-10">

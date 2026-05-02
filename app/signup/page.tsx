@@ -69,8 +69,8 @@ export default function SignupPage() {
                   onClick={() => setFormData({ ...formData, role: 'admin' })}
                   className={cn(
                     "p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden group",
-                    formData.role === 'admin' 
-                      ? "border-indigo-600 bg-indigo-50/50 shadow-md ring-4 ring-indigo-50" 
+                    formData.role === 'admin'
+                      ? "border-indigo-600 bg-indigo-50/50 shadow-md ring-4 ring-indigo-50"
                       : "border-slate-100 hover:border-slate-200 bg-slate-50/30"
                   )}
                 >
@@ -97,8 +97,8 @@ export default function SignupPage() {
                   onClick={() => setFormData({ ...formData, role: 'member' })}
                   className={cn(
                     "p-5 rounded-2xl border-2 text-left transition-all relative group",
-                    formData.role === 'member' 
-                      ? "border-slate-600 bg-slate-50 shadow-md ring-4 ring-slate-50" 
+                    formData.role === 'member'
+                      ? "border-slate-600 bg-slate-50 shadow-md ring-4 ring-slate-50"
                       : "border-slate-100 hover:border-slate-200 bg-slate-50/30"
                   )}
                 >

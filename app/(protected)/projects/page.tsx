@@ -6,40 +6,20 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Plus, Briefcase } from 'lucide-react';
+import { useData } from '@/lib/DataContext';
+import { useSession } from '@/lib/SessionContext';
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = React.useState<any[]>([]);
-  const [session, setSession] = React.useState<any>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { session } = useSession();
+  const { projects, refreshProjects } = useData();
+  const [isLoading, setIsLoading] = React.useState(!projects.length);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [projectName, setProjectName] = React.useState('');
 
-  const fetchProjects = async () => {
-    try {
-      const res = await fetch('/api/projects');
-      const data = await res.json();
-      if (res.ok) setProjects(data);
-    } catch (error) {
-      console.error('Failed to fetch projects', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchSession = async () => {
-    try {
-      const res = await fetch('/api/auth/session');
-      if (res.ok) setSession(await res.json());
-    } catch (e) {
-      // ignore
-    }
-  };
-
   React.useEffect(() => {
-    fetchProjects();
-    fetchSession();
-  }, []);
+    refreshProjects().finally(() => setIsLoading(false));
+  }, [refreshProjects]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,24 +33,27 @@ export default function ProjectsPage() {
       if (res.ok) {
         setIsModalOpen(false);
         setProjectName('');
-        fetchProjects();
+        refreshProjects(true);
       } else {
         const errorData = await res.json();
-        alert(errorData.error || 'Failed to create project');
+        alert(errorData.error || 'Project creation failed');
       }
     } catch (error) {
-      console.error('Failed to create project', error);
-      alert('An error occurred while creating the project');
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-    </div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
+
+  const isAdmin = session?.role === 'admin';
 
   return (
     <div className="space-y-8 font-outfit">
@@ -81,8 +64,8 @@ export default function ProjectsPage() {
         </div>
         <Button 
           onClick={() => {
-            if (session?.role !== 'admin') {
-              alert('Only a Team Leader or Admin can create projects and assign them to members.');
+            if (!isAdmin) {
+              alert('Restricted: Team Leaders only.');
               return;
             }
             setIsModalOpen(true);
@@ -100,18 +83,13 @@ export default function ProjectsPage() {
             <ProjectCard 
               key={project._id} 
               project={project} 
-              isAdmin={session?.role === 'admin'}
+              isAdmin={isAdmin}
               onDelete={async (id: string) => {
                 try {
                   const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-                  if (res.ok) fetchProjects();
-                  else {
-                    const err = await res.json();
-                    alert(err.error || 'Failed to delete project');
-                  }
+                  if (res.ok) refreshProjects(true);
                 } catch (e) {
-                  console.error('Delete failed', e);
-                  alert('Failed to delete project');
+                  console.error('Deletion error:', e);
                 }
               }}
             />
@@ -121,17 +99,11 @@ export default function ProjectsPage() {
         <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
           <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
           <h4 className="text-lg font-medium text-slate-900">No projects yet</h4>
-          <p className="text-slate-500 text-sm">Create your first project to get started.</p>
+          <p className="text-slate-500 text-sm">Start by creating your first team initiative.</p>
           <Button 
             variant="outline" 
             className="mt-6" 
-            onClick={() => {
-              if (session?.role !== 'admin') {
-                alert('Only a Team Leader or Admin can create projects and assign them to members.');
-                return;
-              }
-              setIsModalOpen(true);
-            }}
+            onClick={() => isAdmin ? setIsModalOpen(true) : alert('Restricted: Team Leaders only.')}
           >
             Create Project
           </Button>

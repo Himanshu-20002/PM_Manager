@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/Input';
 import { Users, UserPlus, Crown, Check, ShieldAlert, RefreshCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { useSession } from '@/lib/SessionContext';
 
 export default function TeamPage() {
+  const { session } = useSession();
   const [team, setTeam] = React.useState<any>(null);
-  const [session, setSession] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [newTeamName, setNewTeamName] = React.useState('');
   const [inviteEmail, setInviteEmail] = React.useState('');
@@ -20,19 +21,12 @@ export default function TeamPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [teamRes, sessionRes] = await Promise.all([
-        fetch('/api/team'),
-        fetch('/api/auth/session')
-      ]);
-
-      const teamData = await teamRes.json();
-      const sessionData = await sessionRes.json();
-
-      setTeam(teamRes.ok ? teamData : null);
-      setSession(sessionData);
+      const res = await fetch('/api/team');
+      const teamData = await res.json();
+      setTeam(res.ok ? teamData : null);
       setLastSynced(new Date().toLocaleTimeString());
-    } catch (error) {
-      console.error('Failed to fetch data', error);
+    } catch (err) {
+      console.error('Fetch error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +49,8 @@ export default function TeamPage() {
         setNewTeamName('');
         fetchData();
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -76,8 +70,8 @@ export default function TeamPage() {
         setShowInviteInput(false);
         fetchData();
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -90,8 +84,8 @@ export default function TeamPage() {
         method: 'PATCH',
       });
       if (res.ok) fetchData();
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -105,7 +99,6 @@ export default function TeamPage() {
     );
   }
 
-  // Case 1: No team exists
   if (!team && session?.role === 'admin') {
     return (
       <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl border border-slate-200 shadow-sm text-center">
@@ -127,7 +120,6 @@ export default function TeamPage() {
     );
   }
 
-  // Case 2: Member with no team
   if (!team) {
     return (
       <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl border border-slate-200 shadow-sm text-center">
@@ -147,7 +139,6 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-12 max-w-4xl mx-auto pb-20">
-      {/* Header */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-100 pb-8 relative">
         <div className="text-center md:text-left">
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{team?.name}</h2>
@@ -188,7 +179,6 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Inline Invite Form */}
       {isOwner && showInviteInput && (
         <div className="py-4 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="bg-white/50 backdrop-blur-sm border border-indigo-100/50 p-6 rounded-2xl shadow-lg shadow-indigo-100/20 max-w-xl mx-auto flex flex-col items-center">
@@ -213,9 +203,7 @@ export default function TeamPage() {
         </div>
       )}
 
-      {/* Gamified Team View */}
       <div className="flex flex-col items-center space-y-12">
-        {/* Team Leader (Top Center) */}
         <div className="relative group">
           <div className="w-32 h-32 rounded-full border-4 border-amber-400 p-1 bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-xl shadow-amber-200/50 transform group-hover:scale-105 transition-transform">
             <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center relative overflow-hidden">
@@ -232,7 +220,6 @@ export default function TeamPage() {
           </div>
         </div>
 
-        {/* Member Grid */}
         <div className="w-full">
           <div className="flex items-center gap-4 mb-8">
             <div className="h-px bg-slate-200 flex-1" />
@@ -276,9 +263,7 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="pt-16 flex flex-col items-center space-y-8">
-        {/* Accept Join for pending members */}
         {!isOwner && myStatus === 'pending' && (
           <div className="w-full max-w-md p-8 bg-slate-900 rounded-[2rem] text-white shadow-2xl flex flex-col items-center border border-slate-800">
             <div className="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center mb-6">
@@ -297,8 +282,6 @@ export default function TeamPage() {
             </Button>
           </div>
         )}
-
-        {/* Removed bulky Invite form for Admin */}
       </div>
     </div>
   );

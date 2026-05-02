@@ -5,11 +5,8 @@ import mongoose from 'mongoose';
 export async function GET() {
   try {
     const startTime = Date.now();
-    
-    // Check Database connection
     await dbConnect();
     const dbStatus = mongoose.connection.readyState === 1 ? 'healthy' : 'unhealthy';
-    
     const responseTime = Date.now() - startTime;
 
     return NextResponse.json({
@@ -19,11 +16,11 @@ export async function GET() {
       responseTime: `${responseTime}ms`,
       env: process.env.NODE_ENV
     });
-  } catch (error: any) {
+  } catch (err: any) {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error.message
+      error: err.message
     }, { status: 500 });
   }
 }
