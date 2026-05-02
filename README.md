@@ -4,6 +4,15 @@ A professional, full-stack Project & Task Management system built with **Next.js
 
 ## 🚀 Key Features
 
+- **Authentication**: JWT-based auth with HTTP-only cookies.
+- **Role-based Access**: 
+  - **Admin**: Create projects, assign tasks, delete tasks.
+  - **Member**: View projects/tasks, update task status.
+- **Project Detail**: View specific project info and its associated tasks.
+- **Dashboard**: Real-time stats (Total, Completed, Overdue tasks).
+- **Modern UI**: Built with Tailwind CSS, Lucide icons, and responsive layouts.
+- **Visual Indicators**: Highlight overdue tasks and status badges.
+
 ### 📡 Smart Sync Engine
 - **Visibility-Aware Polling**: Background sync heartbeats automatically pause when the tab is hidden to save server resources.
 - **Focus-Driven Refresh**: Data refreshes instantly the moment you switch back to the application.
